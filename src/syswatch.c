@@ -85,7 +85,11 @@ static void syswatch_wdt_feed(void)
 /* thread except resolve mode 0--system reset */
 static void syswatch_thread_except_resolve_reset(rt_thread_t thread)
 {
+    #if (RTTHREAD_VERSION < 50002)
     LOG_E("%.*s thread exception, priority = %d, execute system reset", RT_NAME_MAX, thread->name, thread->current_priority);
+    #else
+    LOG_E("%.*s thread exception, priority = %d, execute system reset", RT_NAME_MAX, thread->parent.name, thread->current_priority);
+    #endif
     syswatch_event_hook_call(SYSWATCH_EVENT_SYSTEM_RESET, thread);
     rt_thread_mdelay(100);
     rt_hw_cpu_reset();
@@ -107,7 +111,11 @@ static void syswatch_thread_except_resolve_kill(rt_thread_t thread)
         rt_thread_delete(thread);
     }
     
+    #if (RTTHREAD_VERSION < 50002)
     LOG_E("%.*s thread exception, priority = %d, successfully killed", RT_NAME_MAX, thread->name, thread->current_priority);
+    #else
+    LOG_E("%.*s thread exception, priority = %d, successfully killed", RT_NAME_MAX, thread->parent.name, thread->current_priority);
+    #endif
 }
 #endif
 
@@ -135,7 +143,11 @@ static void syswatch_thread_except_resolve_resume_save_msg(rt_thread_t thread)
     #else
     thread_msg->priority= thread->current_priority;
     #endif
+    #if (RTTHREAD_VERSION < 50002)
     rt_strncpy(thread_msg->name, thread->name, RT_NAME_MAX);
+    #else
+    rt_strncpy(thread_msg->name, thread->parent.name, RT_NAME_MAX);
+    #endif
 
     rt_slist_append(&(sw_data.wait_resume_slist), (rt_slist_t *)thread_msg);
 
