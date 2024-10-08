@@ -25,40 +25,46 @@ static void syswatch_test_thread_entry(void *parameter)
     rt_uint32_t delay_s = (rt_uint32_t)parameter;
     rt_thread_t thread = rt_thread_self();
 
+    #if (RTTHREAD_VERSION < 50002)
+    char *thrd_name = thread->name;
+    #else
+    char *thrd_name = thread->parent.name;
+    #endif
+
 #if (SYSWATCH_EXCEPT_RESOLVE_MODE == 2)
 
     rt_uint32_t idx;
 
-    idx = atoi(thread->name+6);
+    idx = atoi(thrd_name+6);
     idx %= 32;
     
     if ((thread_sign & (1<<idx)) == 0)//first entry
     {
         thread_sign |= (1<<idx);
 
-        LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thread->name, thread->current_priority);
+        LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
         LOG_I("system watch thread exception timeout = %d s, delay = %d s", SYSWATCH_EXCEPT_TIMEOUT, delay_s);
         LOG_I("system watch exception resolve mode = %d", SYSWATCH_EXCEPT_RESOLVE_MODE);
 
         rt_thread_mdelay(delay_s * 1000);
-        LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thread->name ,thread->current_priority);
+        LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
         while(1);
     }
     else//second entry
     {
         thread_sign &= ~(1<<idx);
         
-        LOG_I("%.*s thread test completion, it will be closed after 10s .", RT_NAME_MAX, thread->name);
+        LOG_I("%.*s thread test completion, it will be closed after 10s .", RT_NAME_MAX, thrd_name);
         rt_thread_mdelay(10 * 1000);
-        LOG_I("%.*s thread closed.", RT_NAME_MAX, thread->name);
+        LOG_I("%.*s thread closed.", RT_NAME_MAX, thrd_name);
     }
 #else
-    LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thread->name, thread->current_priority);
+    LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
     LOG_I("system watch thread exception timeout = %d s, delay = %d s", SYSWATCH_EXCEPT_TIMEOUT, delay_s);
     LOG_I("system watch exception resolve mode = %d", SYSWATCH_EXCEPT_RESOLVE_MODE);
 
     rt_thread_mdelay(delay_s * 1000);
-    LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thread->name ,thread->current_priority);
+    LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
     while(1);
 #endif
 }
