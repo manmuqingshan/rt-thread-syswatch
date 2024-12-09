@@ -31,6 +31,12 @@ static void syswatch_test_thread_entry(void *parameter)
     char *thrd_name = thread->parent.name;
     #endif
 
+    #if (RTTHREAD_VERSION <= 50100)
+    rt_uint8_t priority = thread->current_priority;
+    #else
+    rt_uint8_t priority = RT_SCHED_PRIV(thread).current_priority;
+    #endif
+    
 #if (SYSWATCH_EXCEPT_RESOLVE_MODE == 2)
 
     rt_uint32_t idx;
@@ -42,12 +48,12 @@ static void syswatch_test_thread_entry(void *parameter)
     {
         thread_sign |= (1<<idx);
 
-        LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
+        LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, priority);
         LOG_I("system watch thread exception timeout = %d s, delay = %d s", SYSWATCH_EXCEPT_TIMEOUT, delay_s);
         LOG_I("system watch exception resolve mode = %d", SYSWATCH_EXCEPT_RESOLVE_MODE);
 
         rt_thread_mdelay(delay_s * 1000);
-        LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
+        LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, priority);
         while(1);
     }
     else//second entry
@@ -59,12 +65,12 @@ static void syswatch_test_thread_entry(void *parameter)
         LOG_I("%.*s thread closed.", RT_NAME_MAX, thrd_name);
     }
 #else
-    LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
+    LOG_I("system watch test thread startup, name = %.*s, priority = %d", RT_NAME_MAX, thrd_name, priority);
     LOG_I("system watch thread exception timeout = %d s, delay = %d s", SYSWATCH_EXCEPT_TIMEOUT, delay_s);
     LOG_I("system watch exception resolve mode = %d", SYSWATCH_EXCEPT_RESOLVE_MODE);
 
     rt_thread_mdelay(delay_s * 1000);
-    LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, thread->current_priority);
+    LOG_I("%.*s thread exception begin. priority = %d", RT_NAME_MAX, thrd_name, priority);
     while(1);
 #endif
 }

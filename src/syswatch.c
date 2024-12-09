@@ -113,8 +113,10 @@ static void syswatch_thread_except_resolve_kill(rt_thread_t thread)
     
     #if (RTTHREAD_VERSION < 50002)
     LOG_E("%.*s thread exception, priority = %d, successfully killed", RT_NAME_MAX, thread->name, thread->current_priority);
-    #else
+    #elif (RTTHREAD_VERSION <= 50100)
     LOG_E("%.*s thread exception, priority = %d, successfully killed", RT_NAME_MAX, thread->parent.name, thread->current_priority);
+    #else
+    LOG_E("%.*s thread exception, priority = %d, successfully killed", RT_NAME_MAX, thread->parent.name, RT_SCHED_PRIV(thread).current_priority);
     #endif
 }
 #endif
@@ -137,11 +139,13 @@ static void syswatch_thread_except_resolve_resume_save_msg(rt_thread_t thread)
     thread_msg->parameter = thread->parameter;
     thread_msg->stack_addr = thread->stack_addr;
     thread_msg->stack_size = thread->stack_size;
-    thread_msg->init_tick = thread->init_tick;
+    thread_msg->init_tick = RT_SCHED_PRIV(thread).init_tick;
     #if (RTTHREAD_VERSION < 40100)
     thread_msg->priority= thread->init_priority;
-    #else
+    #elif (RTTHREAD_VERSION <= 50100)
     thread_msg->priority= thread->current_priority;
+    #else
+    thread_msg->priority= RT_SCHED_PRIV(thread).current_priority;
     #endif
     #if (RTTHREAD_VERSION < 50002)
     rt_strncpy(thread_msg->name, thread->name, RT_NAME_MAX);
@@ -235,11 +239,20 @@ static void syswatch_thread_except_resolve(rt_thread_t thread)
 
 static void syswatch_thread_switch_hook(struct rt_thread * from, struct rt_thread * to)
 {
+
+    #if (RTTHREAD_VERSION <= 50100)
     if (from->current_priority > to->current_priority)//low->high or same, no care
+    #else
+    if (RT_SCHED_PRIV(from).current_priority > RT_SCHED_PRIV(to).current_priority)//low->high or same, no care
+    #endif
     {
         return;
     }
+    #if (RTTHREAD_VERSION <= 50100)
     if (to->current_priority == RT_THREAD_PRIORITY_MAX-1)//switch to idle thread
+    #else
+    if (RT_SCHED_PRIV(to).current_priority == RT_THREAD_PRIORITY_MAX-1)//switch to idle thread
+    #endif
     {
 #if (SYSWATCH_EXCEPT_RESOLVE_MODE == 2)
         switch(sw_data.op_step)
@@ -278,18 +291,34 @@ static void syswatch_thread_switch_hook(struct rt_thread * from, struct rt_threa
         sw_data.lowest_thread = to;
         return;
     }
+    #if (RTTHREAD_VERSION <= 50100)
     if (to->current_priority > sw_data.lowest_thread->current_priority)//to lower
+    #else
+    if (RT_SCHED_PRIV(to).current_priority > RT_SCHED_PRIV(sw_data.lowest_thread).current_priority)//to lower
+    #endif
     {
         sw_data.lowest_thread = to;
         return;
     }
+    #if (RTTHREAD_VERSION <= 50100)
     if (to->current_priority < sw_data.lowest_thread->current_priority)//to higher
+    #else
+    if (RT_SCHED_PRIV(to).current_priority < RT_SCHED_PRIV(sw_data.lowest_thread).current_priority)//to higher
+    #endif
     {
         return;
     }
+    #if (RTTHREAD_VERSION <= 50100)
     if (to->current_priority == from->current_priority)//same priority task switching 
+    #else
+    if (RT_SCHED_PRIV(to).current_priority == RT_SCHED_PRIV(from).current_priority)//same priority task switching
+    #endif
     {
+        #if (RTTHREAD_VERSION <= 50100)
         if ((from->stat & RT_THREAD_STAT_MASK) == RT_THREAD_RUNNING)//is yield
+        #else
+        if ((RT_SCHED_CTX(from).stat & RT_THREAD_STAT_MASK) == RT_THREAD_RUNNING)//is yield
+        #endif
         {
             sw_data.lowest_thread = from;
         }
