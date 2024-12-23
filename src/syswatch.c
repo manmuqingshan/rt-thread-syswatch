@@ -139,12 +139,14 @@ static void syswatch_thread_except_resolve_resume_save_msg(rt_thread_t thread)
     thread_msg->parameter = thread->parameter;
     thread_msg->stack_addr = thread->stack_addr;
     thread_msg->stack_size = thread->stack_size;
-    thread_msg->init_tick = RT_SCHED_PRIV(thread).init_tick;
     #if (RTTHREAD_VERSION < 40100)
+    thread_msg->init_tick = thread->init_tick;
     thread_msg->priority= thread->init_priority;
     #elif (RTTHREAD_VERSION <= 50100)
+    thread_msg->init_tick = thread->init_tick;
     thread_msg->priority= thread->current_priority;
     #else
+    thread_msg->init_tick = RT_SCHED_PRIV(thread).init_tick;
     thread_msg->priority= RT_SCHED_PRIV(thread).current_priority;
     #endif
     #if (RTTHREAD_VERSION < 50002)
